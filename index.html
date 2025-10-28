@@ -5,8 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WantedNFT 🌈</title>
 <style>
-body { font-family: Arial; text-align: center; padding:15px; background: linear-gradient(135deg, red, orange, yellow, green, blue, indigo, violet); background-size:400% 400%; animation: rainbowBG 15s ease infinite; color:#fff; }
-@keyframes rainbowBG{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+body {
+  font-family: Arial; text-align: center; padding:15px;
+  background: linear-gradient(135deg, red, orange, yellow, green, blue, indigo, violet);
+  background-size:400% 400%; animation: rainbowBG 15s ease infinite; color:#fff;
+}
+@keyframes rainbowBG{
+  0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}
+}
 input,button{width:90%;max-width:400px;padding:12px;margin:8px 0;border-radius:12px;border:none;font-size:18px;}
 button{background:white;color:black;font-weight:bold;cursor:pointer;transition:transform .2s;}
 button:hover{transform:scale(1.05);}
@@ -48,6 +54,7 @@ a{color:#fff;text-decoration:underline;}
 </div>
 
 <script type="module">
+// Imports
 import { NFTStorage, File } from 'https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.esm.min.js';
 import { ethers } from 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js';
 import Web3Modal from 'https://cdn.jsdelivr.net/npm/web3modal@1.9.12/dist/index.js';
@@ -148,15 +155,21 @@ async function mintNFT(){
   setStatus('⏳ Uploading NFT…');
   try{
     const client=new NFTStorage({token:NFT_STORAGE_API_KEY});
-    const metadata=await client.store({name,description,image:new File([file],file.name,{type:file.type})});
+    const metadata=await client.store({name,description:image:new File([file],file.name,{type:file.type})});
     setStatus('⏳ Minting NFT…');
     const tx=await contract.mint(await signer.getAddress(), metadata.url);
     await tx.wait();
     setStatus('✅ NFT Minted!');
+
     try{
-      await fetch(FARCASTER_SERVER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:`Just minted "${name}" 🌈 ${metadata.url}`})});
+      await fetch(FARCASTER_SERVER_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text:`Just minted "${name}" 🌈 ${metadata.url}`})
+      });
       setStatus(prev=>prev+' | Shared on Farcaster!');
     }catch(e){}
+
   }catch(e){console.error(e); setStatus('❌ Mint failed: '+(e.message||e));}
 }
 
