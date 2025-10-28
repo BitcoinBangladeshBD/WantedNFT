@@ -37,6 +37,7 @@
     transition: transform 0.2s;
   }
   button:hover { transform: scale(1.05); }
+  #walletSelection button { margin: 5px; }
   #nftFeed div {
     background: rgba(255, 255, 255, 0.2);
     padding: 12px;
@@ -62,30 +63,32 @@ import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.mi
 const NFT_STORAGE_API_KEY = '9d430850.bfe90cadc02d42b78f7dfd2d5dadaef1';
 const CONTRACT_ADDRESS = '0x071d79fb0a7b06ACA531e653f8A84121cE667e8E';
 const BASE_CHAIN_ID = 8453;
-
-// ✅ Your Render server URL
-const FARCASTER_SERVER_URL = 'https://farcasterserver.onrender.com/post'; 
+const FARCASTER_SERVER_URL = 'https://farcasterserver.onrender.com/post';
 
 let provider, signer, contract;
 
 // ===== Connect Wallet =====
-async function connectWallet(auto=false) {
+async function connectWallet(walletType) {
   if (!window.ethereum) {
-    alert('Please install MetaMask or Base wallet!');
+    alert('No Base-compatible wallet found. Install MetaMask, Base Wallet, Bitget, Rainbow, or Rabby!');
     return;
   }
 
-  provider = new ethers.providers.Web3Provider(window.ethereum);
+  provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+  let walletName = walletType || 'Wallet';
 
   try {
     await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+
     const network = await provider.getNetwork();
     if (network.chainId !== BASE_CHAIN_ID) {
-      alert('Switch to Base Mainnet in your wallet!');
+      alert('Please switch to Base Mainnet in your wallet!');
       return;
     }
 
-    signer = provider.getSigner();
+    const address = await signer.getAddress();
+    document.getElementById('status').innerText = `${walletName} connected: ${address}`;
 
     contract = new ethers.Contract(CONTRACT_ADDRESS, [
       "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
@@ -94,20 +97,44 @@ async function connectWallet(auto=false) {
     ], signer);
 
     document.getElementById('mintButton').disabled = false;
-    const address = await signer.getAddress();
-    document.getElementById('status').innerText = `Wallet connected: ${address}`;
 
     contract.on("Transfer", async (from, to, tokenId) => {
       const tokenURI = await contract.tokenURI(tokenId);
       addNFTToFeed(tokenId, tokenURI);
     });
 
-  } catch(e) {
-    if (auto) {
-      document.getElementById('status').innerText = 'Tap "Connect Wallet" if auto-connect fails';
-    } else {
-      alert('Connection failed: '+e.message);
-    }
+    // Hide wallet selection after successful connection
+    document.getElementById('walletSelection').style.display = 'none';
+
+  } catch(err) {
+    console.error(err);
+    document.getElementById('status').innerText = 'Connection failed. Make sure your wallet supports Base Chain.';
+  }
+}
+
+// ===== Auto-detect wallets =====
+async function detectWallets() {
+  if (!window.ethereum) {
+    document.getElementById('status').innerText = 'No Base-compatible wallet detected. Please install one!';
+    return;
+  }
+
+  const wallets = [];
+  if (window.ethereum.isMetaMask) wallets.push('MetaMask');
+  if (window.ethereum.isBitget) wallets.push('Bitget');
+  if (window.ethereum.isBaseWallet) wallets.push('Base');
+  if (window.ethereum.isRainbow) wallets.push('Rainbow');
+  if (window.ethereum.isRabby) wallets.push('Rabby');
+
+  if (wallets.length === 0) {
+    document.getElementById('status').innerText = 'No Base-compatible wallet detected. Please install one!';
+  } else if (wallets.length === 1) {
+    document.getElementById('status').innerText = `Auto-connecting ${wallets[0]}...`;
+    await connectWallet(wallets[0]);
+  } else {
+    // Show wallet selection if multiple wallets are detected
+    document.getElementById('walletSelection').style.display = 'block';
+    document.getElementById('status').innerText = 'Select a wallet to connect 🌈';
   }
 }
 
@@ -140,7 +167,6 @@ async function mintNFT() {
 
   document.getElementById('status').innerText = 'NFT Minted! 🌈';
 
-  // ✅ Safe Farcaster posting via your server
   const text = `Just minted my NFT: ${name}\n${metadata.url}`;
   try {
     await fetch(FARCASTER_SERVER_URL, {
@@ -169,19 +195,27 @@ window.connectWallet = connectWallet;
 window.mintNFT = mintNFT;
 window.showPreview = showPreview;
 
-window.addEventListener('load', () => connectWallet(true));
+window.addEventListener('load', detectWallets);
 </script>
 </head>
 <body>
 <h1>WantedNFT 🌈</h1>
 
+<div id="walletSelection" style="display:none">
+  <p>Select your wallet:</p>
+  <button onclick="connectWallet('MetaMask')">MetaMask</button>
+  <button onclick="connectWallet('Bitget')">Bitget Wallet</button>
+  <button onclick="connectWallet('Base')">Base Wallet</button>
+  <button onclick="connectWallet('Rainbow')">Rainbow Wallet</button>
+  <button onclick="connectWallet('Rabby')">Rabby Wallet</button>
+</div>
+
 <input type="text" id="nftName" placeholder="NFT Name" /><br/>
 <input type="text" id="nftDesc" placeholder="NFT Description" /><br/>
 <input type="file" id="nftImage" accept="image/*" onchange="showPreview(event)" /><br/>
 <img id="previewImg" alt="Image Preview" /><br/>
-<button onclick="connectWallet()">Connect Wallet 🌈</button>
 <button id="mintButton" onclick="mintNFT()" disabled>Mint NFT 🌈</button>
-<p id="status">Connecting your Base wallet...</p>
+<p id="status">Checking wallet connection...</p>
 
 <h2>Live NFT Feed</h2>
 <div id="nftFeed"></div>
