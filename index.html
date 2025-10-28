@@ -1,185 +1,204 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WantedNFT 🌈</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WantedNFT 🌈c</title>
+<link rel="icon" href="data:,">
 <style>
-body {
-  font-family: Arial; text-align: center; padding:15px;
-  background: linear-gradient(135deg, red, orange, yellow, green, blue, indigo, violet);
-  background-size:400% 400%; animation: rainbowBG 15s ease infinite; color:#fff;
-}
-@keyframes rainbowBG{
-  0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}
-}
-input,button{width:90%;max-width:400px;padding:12px;margin:8px 0;border-radius:12px;border:none;font-size:18px;}
-button{background:white;color:black;font-weight:bold;cursor:pointer;transition:transform .2s;}
-button:hover{transform:scale(1.05);}
-button:disabled{background:#aaa;cursor:not-allowed;}
-#previewImg{max-width:200px;max-height:200px;margin:10px auto;border-radius:12px;display:none;}
-#nftFeed div{background:rgba(255,255,255,.2);padding:12px;margin:12px auto;border-radius:12px;max-width:400px;}
-a{color:#fff;text-decoration:underline;}
-/* Modal Styles */
-.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:999;}
-.modal-content{background:#111;padding:20px;border-radius:12px;text-align:center;width:90%;max-width:400px;}
-.modal-content h2{color:#fff;margin-bottom:20px;}
-.wallet-btn{background:#222;color:#fff;padding:12px;margin:10px;border-radius:12px;cursor:pointer;font-weight:bold;}
-.wallet-btn:hover{background:#333;}
+  :root{--glass: rgba(255,255,255,0.06);--card:#0f1720}
+  html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#ff3b3b,#ff8a00,#ffd400,#4bd962,#3fb3ff,#8b5cf6,#ff66b2);background-size:400% 400%;animation:rainbowBG 15s linear infinite;color:#fff}
+  @keyframes rainbowBG{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  .wrap{max-width:920px;margin:24px auto;padding:20px;text-align:center}
+  h1{margin:6px 0;font-weight:700}
+  p.lead{opacity:.95;margin:0 0 16px}
+  .controls{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:12px 0}
+  .control{flex:1 1 260px;max-width:420px;display:flex;flex-direction:column;gap:8px}
+  input[type="text"],textarea,input[type="file"]{padding:12px;border-radius:12px;border:0;font-size:15px;background:rgba(255,255,255,0.06);color:#fff;outline:none}
+  button.btn{padding:12px;border-radius:12px;border:0;background:#fff;color:#000;font-weight:700;cursor:pointer;transition:transform .12s;box-shadow:0 6px 18px rgba(0,0,0,0.25)}
+  button.btn:hover{transform:translateY(-3px)}
+  button.secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.08)}
+  button[disabled]{opacity:.6;cursor:not-allowed;transform:none}
+  #preview{max-width:240px;margin:0 auto;border-radius:14px;display:none;box-shadow:0 10px 30px rgba(0,0,0,0.3)}
+  .status{margin-top:10px;opacity:.95}
+  .feed{margin-top:26px;display:flex;flex-direction:column;gap:12px;align-items:center}
+  .card{width:100%;max-width:560px;background:rgba(255,255,255,0.05);padding:12px;border-radius:12px;text-align:left;display:flex;gap:12px;align-items:center}
+  .thumb{width:72px;height:72px;border-radius:8px;object-fit:cover;background:linear-gradient(0deg,#222,#111)}
+  .card .meta{flex:1}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:90}
+  .modal{width:92%;max-width:420px;background:#071021;padding:18px;border-radius:12px;color:#fff;box-shadow:0 20px 50px rgba(0,0,0,0.6)}
+  .wallet-list{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+  .wallet-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:rgba(255,255,255,0.03);cursor:pointer}
+  .wallet-item:hover{background:rgba(255,255,255,0.05)}
+  small.hint{opacity:.9}
+  footer{margin-top:26px;opacity:.9;font-size:13px}
+  @media (max-width:600px){ .controls{flex-direction:column} .card{flex-direction:row} }
 </style>
 </head>
 <body>
+  <div class="wrap">
+    <h1>WantedNFT 🌈</h1>
+    <p class="lead">Rainbow Mint Magic — connect a wallet, upload art, mint, and share ✨</p>
 
-<h1>WantedNFT 🌈</h1>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button id="openWallet" class="btn">Connect Wallet</button>
+      <button id="disconnect" class="secondary" style="display:none">Disconnect</button>
+    </div>
 
-<button id="connectBtn">Connect Wallet 🌈</button><br/><br/>
-<input type="text" id="nftName" placeholder="NFT Name"/><br/>
-<input type="text" id="nftDesc" placeholder="NFT Description"/><br/>
-<input type="file" id="nftImage" accept="image/*" onchange="showPreview(event)"/><br/>
-<img id="previewImg" alt="Image Preview"/><br/>
-<button id="mintButton" onclick="mintNFT()" disabled>Mint NFT 🌈</button>
-<p id="status">Connect wallet to start 🌈</p>
+    <div class="controls" style="margin-top:18px">
+      <div class="control">
+        <input id="nftName" type="text" placeholder="NFT Name" autocomplete="off" />
+        <textarea id="nftDesc" rows="3" placeholder="NFT Description" style="border-radius:12px"></textarea>
+        <input id="nftImage" type="file" accept="image/*" />
+        <img id="preview" alt="preview"/>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:6px">
+          <button id="mint" class="btn" disabled>Mint NFT 🌈</button>
+          <button id="shareFarcaster" class="secondary" title="Share minted link to Farcaster (optional)" disabled>Share after mint</button>
+        </div>
+        <p class="status" id="status">Status: Not connected</p>
+        <small class="hint">Notes: This page uses NFT.Storage (client-side uploads). No backend required.</small>
+      </div>
+    </div>
 
-<h2>Live NFT Feed</h2>
-<div id="nftFeed"></div>
+    <h3 style="margin-top:26px">Live NFT Feed</h3>
+    <div id="feed" class="feed"></div>
 
-<!-- Wallet Connect Modal -->
-<div class="modal-bg" id="walletModal">
-  <div class="modal-content">
-    <h2>Select Wallet</h2>
-    <div class="wallet-btn" id="metamaskBtn">MetaMask</div>
-    <div class="wallet-btn" id="walletConnectBtn">WalletConnect</div>
-    <div class="wallet-btn" id="coinbaseBtn">Coinbase Wallet</div>
+    <footer>Made with ❤️ by WantedNFT — Rainbow Mint Magic 🌈</footer>
   </div>
-</div>
 
-<script type="module">
-// Imports
-import { NFTStorage, File } from 'https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.esm.min.js';
-import { ethers } from 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js';
-import Web3Modal from 'https://cdn.jsdelivr.net/npm/web3modal@1.9.12/dist/index.js';
-import WalletConnectProvider from 'https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js';
+  <!-- Wallet modal -->
+  <div id="walletModal" class="modal-bg">
+    <div class="modal">
+      <h3>Connect Wallet</h3>
+      <p>Choose a wallet to connect:</p>
+      <div class="wallet-list">
+        <div id="btn-metamask" class="wallet-item"><img src="https://ethernodes.org/images/metamask.png" width="28" alt=""> MetaMask / Base Wallet</div>
+        <div id="btn-walletconnect" class="wallet-item"><img src="https://walletconnect.com/walletconnect-logo.svg" width="28" alt=""> WalletConnect</div>
+        <div id="btn-cancel" class="wallet-item">Cancel</div>
+      </div>
+    </div>
+  </div>
 
-// CONFIG
-const NFT_STORAGE_API_KEY = '9d430850.bfe90cadc02d42b78f7dfd2d5dadaef1';
-const CONTRACT_ADDRESS = '0x071d79fb0a7b06ACA531e653f8A84121cE667e8E';
-const BASE_CHAIN_ID = 8453;
-const FARCASTER_SERVER_URL = 'https://farcasterserver.onrender.com/post';
+  <!-- Libs -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.12/dist/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.esm.min.js"></script>
 
-let provider, signer, contract, web3Modal;
+  <script>
+  (async ()=>{
+  // ===== CONFIG =====
+  const NFT_STORAGE_KEY = '9d430850.bfe90cadc02d42b78f7dfd2d5dadaef1';
+  const INFURA_ID = 'ceed5012f1e644dc9decb187d8f53d52';
+  const CONTRACT_ADDRESS = '0x071d79fb0a7b06ACA531e653f8A84121cE667e8E';
+  const TARGET_CHAIN_ID_DEC = 8453;
+  const TARGET_CHAIN_ID_HEX = '0x2105';
+  const FARCASTER_SERVER_URL = 'https://farcasterserver.onrender.com/post';
+  // ==================
 
-// INIT Web3Modal
-web3Modal = new Web3Modal({
-  cacheProvider: true,
-  providerOptions: {
-    walletconnect: {
-      package: WalletConnectProvider,
-      options: { infuraId: "YOUR_INFURA_ID" }
-    }
-  }
-});
+  const openWallet = document.getElementById('openWallet');
+  const walletModal = document.getElementById('walletModal');
+  const btnMetamask = document.getElementById('btn-metamask');
+  const btnWalletConnect = document.getElementById('btn-walletconnect');
+  const btnCancel = document.getElementById('btn-cancel');
+  const disconnectBtn = document.getElementById('disconnect');
+  const mintBtn = document.getElementById('mint');
+  const shareBtn = document.getElementById('shareFarcaster');
+  const statusEl = document.getElementById('status');
+  const previewImg = document.getElementById('preview');
+  const nftImage = document.getElementById('nftImage');
+  const nftName = document.getElementById('nftName');
+  const nftDesc = document.getElementById('nftDesc');
+  const feedEl = document.getElementById('feed');
 
-const walletModal = document.getElementById('walletModal');
-const connectBtn = document.getElementById('connectBtn');
+  let web3Modal, signer, ethersProvider, contract, connectedAddress, wcProviderInstance;
 
-// Show modal
-connectBtn.onclick = ()=>{ walletModal.style.display='flex'; };
+  const ABI = [
+    "event Transfer(address indexed from,address indexed to,uint256 indexed tokenId)",
+    "function mint(address to,string memory uri) public returns(uint256)",
+    "function tokenURI(uint256 tokenId) public view returns(string memory)"
+  ];
 
-// Connect wallet function
-async function connectWallet(walletType){
-  try{
-    let instance;
-    if(walletType==='metamask'){
-      if(!window.ethereum) return alert('Install MetaMask!');
-      instance = window.ethereum;
-      await instance.request({method:'eth_requestAccounts'});
-    } else {
-      instance = await web3Modal.connectTo(walletType==='walletconnect'?'walletconnect':'coinbase');
-    }
-
-    provider = new ethers.providers.Web3Provider(instance);
-    signer = provider.getSigner();
-    const network = await provider.getNetwork();
-    if(network.chainId!==BASE_CHAIN_ID){
-      setStatus('⚠️ Switch to Base Mainnet in your wallet!');
-      return;
-    }
-    const address = await signer.getAddress();
-    setStatus(`✅ Connected: ${address.slice(0,6)}…${address.slice(-4)}`);
-    document.getElementById('mintButton').disabled=false;
-    walletModal.style.display='none';
-    connectBtn.innerText='Wallet Connected';
-    connectBtn.disabled=true;
-
-    // Contract
-    contract = new ethers.Contract(CONTRACT_ADDRESS, [
-      "event Transfer(address indexed from,address indexed to,uint256 indexed tokenId)",
-      "function mint(address to,string memory uri) public returns(uint256)",
-      "function tokenURI(uint256 tokenId) public view returns(string memory)"
-    ], signer);
-
-    // Event listener
-    contract.on("Transfer", async (from,to,tokenId)=>{
-      if(from===ethers.constants.AddressZero){
-        const uri = await contract.tokenURI(tokenId);
-        addNFTToFeed(tokenId.toString(), uri);
+  function initWeb3Modal(){
+    const providerOptions = {
+      walletconnect: {
+        package: window.WalletConnectProvider.default,
+        options: { rpc: { 8453: `https://base-mainnet.infura.io/v3/${INFURA_ID}` } }
       }
-    });
-
-    // Optional: Sign wallet message to verify ownership
-    const message = "Sign this message to verify your wallet for WantedNFT 🌈";
-    const signature = await signer.signMessage(message);
-    console.log('Signed message:', signature);
-
-  } catch(err){
-    console.error(err);
-    setStatus('❌ Wallet connect failed: '+(err.message||err));
+    };
+    web3Modal = new window.Web3Modal.default({ cacheProvider:false, providerOptions });
   }
-}
 
-// Wallet buttons
-document.getElementById('metamaskBtn').onclick=()=>connectWallet('metamask');
-document.getElementById('walletConnectBtn').onclick=()=>connectWallet('walletconnect');
-document.getElementById('coinbaseBtn').onclick=()=>connectWallet('coinbase');
+  function setStatus(s){ statusEl.innerText = 'Status: ' + s; console.log(s); }
+  function showPreview(file){ if(!file){ previewImg.style.display='none'; return; } previewImg.src = URL.createObjectURL(file); previewImg.style.display='block'; }
+  function setConnectedUI(addr){ connectedAddress = addr; openWallet.innerText = addr ? `${addr.slice(0,6)}…${addr.slice(-4)}` : 'Connect Wallet'; disconnectBtn.style.display = addr ? 'inline-block' : 'none'; mintBtn.disabled = !addr; shareBtn.disabled = !addr; }
 
-// NFT Functions
-function setStatus(msg){ document.getElementById('status').innerText=msg; }
-function showPreview(e){ const img=document.getElementById('previewImg'); img.src=URL.createObjectURL(e.target.files[0]); img.style.display='block'; }
+  async function ensureCorrectNetwork(raw){
+    try{ await raw.request({ method:'wallet_switchEthereumChain', params:[{ chainId: TARGET_CHAIN_ID_HEX }] }); return true; }
+    catch(e){ return false; }
+  }
 
-async function mintNFT(){
-  const name=document.getElementById('nftName').value.trim();
-  const desc=document.getElementById('nftDesc').value.trim();
-  const file=document.getElementById('nftImage').files[0];
-  if(!name||!desc||!file) return alert('⚠️ Fill all fields');
+  openWallet.onclick = ()=> walletModal.style.display='flex';
+  btnCancel.onclick = ()=> walletModal.style.display='none';
 
-  setStatus('⏳ Uploading NFT…');
-  try{
-    const client=new NFTStorage({token:NFT_STORAGE_API_KEY});
-    const metadata=await client.store({name,description:image:new File([file],file.name,{type:file.type})});
-    setStatus('⏳ Minting NFT…');
-    const tx=await contract.mint(await signer.getAddress(), metadata.url);
-    await tx.wait();
-    setStatus('✅ NFT Minted!');
+  btnMetamask.onclick = async ()=>{
+    walletModal.style.display='none';
+    if(!window.ethereum) return alert('Install MetaMask or Base Wallet!');
+    const raw = window.ethereum;
+    await ensureCorrectNetwork(raw);
+    await raw.request({ method:'eth_requestAccounts' });
+    ethersProvider = new ethers.providers.Web3Provider(raw);
+    signer = ethersProvider.getSigner();
+    const addr = await signer.getAddress();
+    setConnectedUI(addr);
+    setStatus('Connected ✅');
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+  };
 
+  btnWalletConnect.onclick = async ()=>{
+    walletModal.style.display='none';
+    const instance = await web3Modal.connectTo('walletconnect');
+    wcProviderInstance = instance;
+    ethersProvider = new ethers.providers.Web3Provider(instance);
+    await ensureCorrectNetwork(instance);
+    signer = ethersProvider.getSigner();
+    const addr = await signer.getAddress();
+    setConnectedUI(addr);
+    setStatus('Connected via WalletConnect ✅');
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+  };
+
+  disconnectBtn.onclick = async ()=>{ if(wcProviderInstance?.close) await wcProviderInstance.close(); web3Modal.clearCachedProvider(); signer=null; setConnectedUI(null); setStatus('Disconnected'); };
+
+  nftImage.onchange = e=> showPreview(e.target.files[0]);
+
+  mintBtn.onclick = async ()=>{
+    if(!signer) return alert('Connect wallet first!');
+    const name = nftName.value.trim(), desc = nftDesc.value.trim(), file = nftImage.files[0];
+    if(!name || !desc || !file) return alert('Fill all fields!');
     try{
-      await fetch(FARCASTER_SERVER_URL,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({text:`Just minted "${name}" 🌈 ${metadata.url}`})
-      });
-      setStatus(prev=>prev+' | Shared on Farcaster!');
-    }catch(e){}
+      mintBtn.disabled=true; setStatus('Uploading to NFT.Storage...');
+      const client = new window.NFTStorage.NFTStorage({ token: NFT_STORAGE_KEY });
+      const metadata = await client.store({ name, description:desc, image:new window.NFTStorage.File([file], file.name, {type:file.type}) });
+      setStatus('Minting on Base...');
+      const tx = await contract.mint(await signer.getAddress(), metadata.url);
+      await tx.wait();
+      setStatus('Minted 🎉');
+      feedEl.innerHTML = `<div class='card'><img class='thumb' src='${URL.createObjectURL(file)}'><div class='meta'><strong>${name}</strong><br><a href='${metadata.url}' target='_blank'>View Metadata</a></div></div>` + feedEl.innerHTML;
+    }catch(e){ console.error(e); setStatus('Error: '+e.message); }
+    finally{ mintBtn.disabled=false; }
+  };
 
-  }catch(e){console.error(e); setStatus('❌ Mint failed: '+(e.message||e));}
-}
+  shareBtn.onclick = async ()=>{
+    const first = feedEl.querySelector('a'); if(!first) return alert('No NFT to share');
+    const text = `Just minted "${nftName.value}" 🌈 ${first.href}`;
+    await fetch(FARCASTER_SERVER_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text}) });
+    setStatus('Shared to Farcaster ✅');
+  };
 
-function addNFTToFeed(tokenId, tokenURI){
-  const feed=document.getElementById('nftFeed');
-  const div=document.createElement('div');
-  div.innerHTML=`<strong>Token #${tokenId}</strong><br/><a href="${tokenURI}" target="_blank">View Metadata</a><hr/>`;
-  feed.prepend(div);
-}
-
-</script>
+  initWeb3Modal();
+  setStatus('Ready 🌈');
+  })();
+  </script>
 </body>
 </html>
