@@ -13,7 +13,7 @@
     animation: rainbowBG 15s ease infinite;
     color: #fff;
     text-align: center;
-    padding: 20px;
+    padding: 15px;
   }
   @keyframes rainbowBG {
     0%{background-position:0% 50%}
@@ -21,11 +21,13 @@
     100%{background-position:0% 50%}
   }
   input, button {
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 12px;
     border: none;
-    font-size: 16px;
+    font-size: 18px;
   }
   button {
     background: white;
@@ -37,12 +39,19 @@
   button:hover { transform: scale(1.05); }
   #nftFeed div {
     background: rgba(255, 255, 255, 0.2);
-    padding: 10px;
-    margin: 10px auto;
-    border-radius: 10px;
+    padding: 12px;
+    margin: 12px auto;
+    border-radius: 12px;
     max-width: 400px;
   }
   a { color: #fff; text-decoration: underline; }
+  #previewImg {
+    max-width: 200px;
+    max-height: 200px;
+    margin: 10px auto;
+    border-radius: 12px;
+    display: none;
+  }
 </style>
 
 <script type="module">
@@ -53,7 +62,7 @@ import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.mi
 // ===== CONFIG =====
 const NFT_STORAGE_API_KEY = '9d430850.bfe90cadc02d42b78f7dfd2d5dadaef1';
 const CONTRACT_ADDRESS = '0x071d79fb0a7b06ACA531e653f8A84121cE667e8E';
-const FARCASTER_AUTH_TOKEN = 'YOUR_REAL_TOKEN_HERE'; // Replace with your Farcaster token
+const FARCASTER_AUTH_TOKEN = 'wc_secret_808b326b777e96def5305a26d38626fbb045c1b491a69a50466c8f11_b742d835';
 const BASE_CHAIN_ID = 8453;
 
 let provider, signer, contract;
@@ -69,7 +78,6 @@ async function connectWallet(auto=false) {
 
   try {
     await provider.send("eth_requestAccounts", []);
-
     const network = await provider.getNetwork();
     if (network.chainId !== BASE_CHAIN_ID) {
       alert('Switch to Base Mainnet in your wallet!');
@@ -88,7 +96,6 @@ async function connectWallet(auto=false) {
     const address = await signer.getAddress();
     document.getElementById('status').innerText = `Wallet connected: ${address}`;
 
-    // Listen to Minted NFTs
     contract.on("Transfer", async (from, to, tokenId) => {
       const tokenURI = await contract.tokenURI(tokenId);
       addNFTToFeed(tokenId, tokenURI);
@@ -101,6 +108,13 @@ async function connectWallet(auto=false) {
       alert('Connection failed: '+e.message);
     }
   }
+}
+
+// ===== Show Image Preview =====
+function showPreview(event) {
+  const preview = document.getElementById('previewImg');
+  preview.src = URL.createObjectURL(event.target.files[0]);
+  preview.style.display = 'block';
 }
 
 // ===== Mint NFT =====
@@ -125,7 +139,6 @@ async function mintNFT() {
 
   document.getElementById('status').innerText = 'NFT Minted! 🌈';
 
-  // Farcaster
   const farcaster = new Farcaster({ authToken: FARCASTER_AUTH_TOKEN });
   try {
     await farcaster.publish({ text: `Just minted my NFT: ${name}\n${metadata.url}` });
@@ -148,8 +161,8 @@ function addNFTToFeed(tokenId, tokenURI) {
 
 window.connectWallet = connectWallet;
 window.mintNFT = mintNFT;
+window.showPreview = showPreview;
 
-// ===== Auto-connect on page load =====
 window.addEventListener('load', () => connectWallet(true));
 </script>
 </head>
@@ -158,7 +171,8 @@ window.addEventListener('load', () => connectWallet(true));
 
 <input type="text" id="nftName" placeholder="NFT Name" /><br/>
 <input type="text" id="nftDesc" placeholder="NFT Description" /><br/>
-<input type="file" id="nftImage" /><br/>
+<input type="file" id="nftImage" accept="image/*" onchange="showPreview(event)" /><br/>
+<img id="previewImg" alt="Image Preview" /><br/>
 <button onclick="connectWallet()">Connect Wallet 🌈</button>
 <button id="mintButton" onclick="mintNFT()" disabled>Mint NFT 🌈</button>
 <p id="status">Connecting your Base wallet...</p>
