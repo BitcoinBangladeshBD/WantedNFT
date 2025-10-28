@@ -57,7 +57,6 @@
 <script type="module">
 import { NFTStorage, File } from 'https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.esm.min.js';
 import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js";
-import WalletConnectProvider from "https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider/dist/umd/index.min.js";
 
 // ===== CONFIG =====
 const NFT_STORAGE_API_KEY = '9d430850.bfe90cadc02d42b78f7dfd2d5dadaef1';
@@ -68,31 +67,27 @@ const FARCASTER_SERVER_URL = 'https://farcasterserver.onrender.com/post';
 let provider, signer, contract;
 
 // ===== Connect Wallet =====
-async function connectWallet(walletType) {
-  try {
-    if (walletType === 'WalletConnect') {
-      const wcProvider = new WalletConnectProvider({
-        rpc: {
-          8453: "https://mainnet.base.org", // Base mainnet RPC
-        }
-      });
-      await wcProvider.enable();
-      provider = new ethers.providers.Web3Provider(wcProvider);
-    } else {
-      if (!window.ethereum) throw new Error('No EVM wallet found!');
-      provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-      await provider.send("eth_requestAccounts", []);
-    }
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert('Install MetaMask or Base Wallet to connect.');
+    return;
+  }
 
+  provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+
+  try {
+    await provider.send("eth_requestAccounts", []);
     signer = provider.getSigner();
+
     const network = await provider.getNetwork();
     if (network.chainId !== BASE_CHAIN_ID) {
-      alert('Switch to Base Mainnet in your wallet!');
+      alert('Switch your wallet to Base Mainnet!');
       return;
     }
 
     const address = await signer.getAddress();
-    document.getElementById('status').innerText = `${walletType} connected: ${address}`;
+    document.getElementById('status').innerText = `Wallet connected: ${address}`;
+    document.getElementById('mintButton').disabled = false;
 
     contract = new ethers.Contract(CONTRACT_ADDRESS, [
       "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
@@ -100,16 +95,14 @@ async function connectWallet(walletType) {
       "function tokenURI(uint256 tokenId) public view returns (string memory)"
     ], signer);
 
-    document.getElementById('mintButton').disabled = false;
-
     contract.on("Transfer", async (from, to, tokenId) => {
       const tokenURI = await contract.tokenURI(tokenId);
       addNFTToFeed(tokenId, tokenURI);
     });
 
-  } catch(e) {
-    console.error(e);
-    document.getElementById('status').innerText = 'Wallet connection failed.';
+  } catch(err) {
+    console.error(err);
+    document.getElementById('status').innerText = 'Failed to connect wallet.';
   }
 }
 
@@ -169,23 +162,23 @@ function addNFTToFeed(tokenId, tokenURI) {
 window.connectWallet = connectWallet;
 window.mintNFT = mintNFT;
 window.showPreview = showPreview;
+
+window.addEventListener('load', () => {
+  document.getElementById('status').innerText = 'Connect your Base wallet to start 🌈';
+});
 </script>
 </head>
 <body>
 <h1>WantedNFT 🌈</h1>
 
-<div id="walletSelection">
-  <p>Select your wallet:</p>
-  <button onclick="connectWallet('MetaMask')">MetaMask / Base</button>
-  <button onclick="connectWallet('WalletConnect')">Bitget / Rainbow / Rabby / Mobile Wallets</button>
-</div>
+<button onclick="connectWallet()">Connect Wallet 🌈</button><br/><br/>
 
 <input type="text" id="nftName" placeholder="NFT Name" /><br/>
 <input type="text" id="nftDesc" placeholder="NFT Description" /><br/>
 <input type="file" id="nftImage" accept="image/*" onchange="showPreview(event)" /><br/>
 <img id="previewImg" alt="Image Preview" /><br/>
 <button id="mintButton" onclick="mintNFT()" disabled>Mint NFT 🌈</button>
-<p id="status">Select a wallet to connect 🌈</p>
+<p id="status">Checking wallet...</p>
 
 <h2>Live NFT Feed</h2>
 <div id="nftFeed"></div>
