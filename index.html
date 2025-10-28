@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WantedNFT 🌈</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, red, orange, yellow, green, blue, indigo, violet);
+    background-size: 400% 400%;
+    animation: rainbowBG 15s ease infinite;
+    color: #fff;
+    text-align: center;
+    padding: 15px;
+  }
+  @keyframes rainbowBG {
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+  }
+  input, button {
+    width: 90%;
+    max-width: 400px;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 12px;
+    border: none;
+    font-size: 18px;
+  }
+  button {
+    background: white;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  button:hover { transform: scale(1.05); }
+  #nftFeed div {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 12px;
+    margin: 12px auto;
+    border-radius: 12px;
+    max-width: 400px;
+  }
+  a { color: #fff; text-decoration: underline; }
+  #previewImg {
+    max-width: 200px;
+    max-height: 200px;
+    margin: 10px auto;
+    border-radius: 12px;
+    display: none;
+  }
+</style>
+
+<script type="module">
+import { NFTStorage, File } from 'https://cdn.jsdelivr.net/npm/nft.storage/dist/bundle.esm.min.js';
+import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js";
+
+// ===== CONFIG =====
+const NFT_STORAGE_API_KEY = '9d430850.bfe90cadc02d42b78f7dfd2d5dadaef1';
+const CONTRACT_ADDRESS = '0x071d79fb0a7b06ACA531e653f8A84121cE667e8E';
+const BASE_CHAIN_ID = 8453;
+
+// ✅ Your Render server URL
+const FARCASTER_SERVER_URL = 'https://farcasterserver.onrender.com/post'; 
+
+let provider, signer, contract;
+
+// ===== Connect Wallet =====
+async function connectWallet(auto=false) {
+  if (!window.ethereum) {
+    alert('Please install MetaMask or Base wallet!');
+    return;
+  }
+
+  provider = new ethers.providers.Web3Provider(window.ethereum);
+
+  try {
+    await provider.send("eth_requestAccounts", []);
+    const network = await provider.getNetwork();
+    if (network.chainId !== BASE_CHAIN_ID) {
+      alert('Switch to Base Mainnet in your wallet!');
+      return;
+    }
+
+    signer = provider.getSigner();
+
+    contract = new ethers.Contract(CONTRACT_ADDRESS, [
+      "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
+      "function mint(address to, string memory uri) public returns (uint256)",
+      "function tokenURI(uint256 tokenId) public view returns (string memory)"
+    ], signer);
+
+    document.getElementById('mintButton').disabled = false;
+    const address = await signer.getAddress();
+    document.getElementById('status').innerText = `Wallet connected: ${address}`;
+
+    contract.on("Transfer", async (from, to, tokenId) => {
+      const tokenURI = await contract.tokenURI(tokenId);
+      addNFTToFeed(tokenId, tokenURI);
+    });
+
+  } catch(e) {
+    if (auto) {
+      document.getElementById('status').innerText = 'Tap "Connect Wallet" if auto-connect fails';
+    } else {
+      alert('Connection failed: '+e.message);
+    }
+  }
+}
+
+// ===== Show Image Preview =====
+function showPreview(event) {
+  const preview = document.getElementById('previewImg');
+  preview.src = URL.createObjectURL(event.target.files[0]);
+  preview.style.display = 'block';
+}
+
+// ===== Mint NFT =====
+async function mintNFT() {
+  const name = document.getElementById('nftName').value;
+  const description = document.getElementById('nftDesc').value;
+  const imageInput = document.getElementById('nftImage').files[0];
+
+  if(!name || !description || !imageInput) return alert('Fill all fields');
+
+  const client = new NFTStorage({ token: NFT_STORAGE_API_KEY });
+  const metadata = await client.store({
+    name,
+    description,
+    image: new File([imageInput], imageInput.name, { type: imageInput.type })
+  });
+
+  document.getElementById('status').innerText = 'Minting NFT...';
+
+  const tx = await contract.mint(await signer.getAddress(), metadata.url);
+  await tx.wait();
+
+  document.getElementById('status').innerText = 'NFT Minted! 🌈';
+
+  // ✅ Safe Farcaster posting via your server
+  const text = `Just minted my NFT: ${name}\n${metadata.url}`;
+  try {
+    await fetch(FARCASTER_SERVER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    document.getElementById('status').innerText += ' | Shared on Farcaster!';
+  } catch(e) {
+    document.getElementById('status').innerText += ' | Failed to post on Farcaster';
+  }
+}
+
+// ===== NFT Feed =====
+function addNFTToFeed(tokenId, tokenURI) {
+  const feed = document.getElementById('nftFeed');
+  const nftItem = document.createElement('div');
+  nftItem.innerHTML = `
+    <strong>Token ID:</strong> ${tokenId}<br/>
+    <a href="${tokenURI}" target="_blank">View NFT Metadata</a><br/><hr/>
+  `;
+  feed.prepend(nftItem);
+}
+
+window.connectWallet = connectWallet;
+window.mintNFT = mintNFT;
+window.showPreview = showPreview;
+
+window.addEventListener('load', () => connectWallet(true));
+</script>
+</head>
+<body>
+<h1>WantedNFT 🌈</h1>
+
+<input type="text" id="nftName" placeholder="NFT Name" /><br/>
+<input type="text" id="nftDesc" placeholder="NFT Description" /><br/>
+<input type="file" id="nftImage" accept="image/*" onchange="showPreview(event)" /><br/>
+<img id="previewImg" alt="Image Preview" /><br/>
+<button onclick="connectWallet()">Connect Wallet 🌈</button>
+<button id="mintButton" onclick="mintNFT()" disabled>Mint NFT 🌈</button>
+<p id="status">Connecting your Base wallet...</p>
+
+<h2>Live NFT Feed</h2>
+<div id="nftFeed"></div>
+</body>
+</html>
